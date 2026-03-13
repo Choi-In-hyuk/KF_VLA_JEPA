@@ -24,11 +24,15 @@
 </p>
 </div>
 
+<div align="center">
+  <img src="assets/VLA-JEPA.png" width="90%" alt="VLA-JEPA overview" />
+</div>
+
 ## TODO
 - [x] Partial training code
 - [x] LIBERO evaluation code
 - [x] LIBERO-Plus evaluation code
-- [ ] SimplerEnv evaluation code
+- [x] SimplerEnv evaluation code
 - [ ] Training codes for custom datasets
 
 ## Environment Setup
@@ -66,6 +70,8 @@ Download the following datasets:
 - [LIBERO](https://huggingface.co/collections/IPEC-COMMUNITY/libero-benchmark-dataset)
 - [BridgeV2](https://huggingface.co/datasets/IPEC-COMMUNITY/bridge_orig_lerobot)
 - [Fractal](https://huggingface.co/datasets/IPEC-COMMUNITY/fractal20220817_data_lerobot)
+
+For robot datasets, you need to add a `modality.json` file under the `meta/` subdirectory of each LeRobot dataset. The `modality.json` files for LIBERO, BridgeV2, Fractal, and Droid are provided under `./examples` (BridgeV2 and Fractal are under `./examples/SimplerEnv`).
 
 ### 2️⃣ Start Training
 Depending on whether you are conducting pre-training or post-training, select the appropriate training script and YAML configuration file from the [`/scripts`](./scripts) directory.
@@ -119,6 +125,31 @@ bash ./examples/LIBERO-Plus/eval_libero_plus.sh
 
 **Notes:** Ensure each process has access to a GPU and verify that all checkpoint paths in the configuration files are correct before running the evaluation.
 
+### SimplerEnv
+
+- **SimplerEnv setup:** Clone the SimplerEnv repository: https://github.com/simpler-env/SimplerEnv and follow the official SimplerEnv installation instructions and build the benchmark in a separate conda environment.
+
+- **Configuration:** In the downloaded checkpoint folder, update `config.json` and `config.yaml` to point the following fields to your local checkpoints:
+  - `framework.qwenvl.basevlm`: path to the Qwen3-VL-2B checkpoint
+  - `framework.vj2_model.base_encoder`: path to the V-JEPA encoder checkpoint
+
+- **Evaluation script:** Edit [`examples/SimplerEnv/eval_files/auto_eval_scripts/batch_evaluate.sh`](examples/SimplerEnv/eval_files/auto_eval_scripts/batch_evaluate.sh) and set the `SimplerEnv_PATH` environment variable to your local SimplerEnv code path, and set the `sim_python` variable to the Python executable of the SimplerEnv conda environment. Finally, set the `MODEL_PATH` variable to the path of the downloaded `SimplerEnv/checkpoints/VLA-JEPA-Simpler.pt`.
+
+- **Run evaluation:** Launch the evaluation:
+```bash
+bash examples/SimplerEnv/eval_files/auto_eval_scripts/batch_evaluate.sh
+```
+
+- **Compute success rates:** After the previous step, SimplerEnv will generate evaluation rollout videos for each sub-task. You can then compute task success rates with [`examples/SimplerEnv/eval_files/auto_eval_scripts/calc_success_rate.sh`](examples/SimplerEnv/eval_files/auto_eval_scripts/calc_success_rate.sh) as follows:
+```bash
+# <task_suite> must be one of: pick_coke_can | move_near | drawer | long_horizon_apple_in_drawer | bridge_put_on.
+# Note: bridge_put_on corresponds to the WidowX robot evaluation; the other four correspond to the Google Robot evaluation.
+# <model_path> is the path to `VLA-JEPA-Simpler.pt`, and <log_dir> is the root directory that contains the generated videos
+# (by default, this is saved under `./results` within the evaluation output directory).
+bash ./examples/SimplerEnv/eval_files/auto_eval_scripts/calc_success_rate.sh <task_suite> <model_path> <log_dir>
+```
+
+**Notes:** Ensure each process has access to a GPU and verify that all checkpoint paths in the configuration files are correct before running the evaluation.
 
 
 
