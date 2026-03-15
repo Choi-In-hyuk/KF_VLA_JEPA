@@ -28,14 +28,33 @@
   <img src="assets/VLA-JEPA.png" width="90%" alt="VLA-JEPA overview" />
 </div>
 
-## TODO
+<a id="table-of-contents"></a>
+## Table of Contents
+- [Table of Contents](#table-of-contents)
+- [🚧 TODO](#todo)
+- [⚙️ Environment Setup](#environment-setup)
+- [🔥 Training](#training)
+  - [0️⃣ Pretrained Model Preparation](#pretrained-model-preparation)
+  - [1️⃣ Data Preparation](#data-preparation)
+  - [2️⃣ Start Training](#start-training)
+  - [3️⃣ Optional: Custom Dataset Training](#optional-custom-dataset-training)
+- [📊 Evaluation](#evaluation)
+  - [LIBERO](#libero)
+  - [LIBERO-Plus](#libero-plus)
+  - [SimplerEnv](#simplerenv)
+- [🤝 Acknowledgement](#acknowledgement)
+- [📝 Citation](#citation)
+
+<a id="todo"></a>
+## 🚧 TODO
 - [x] Partial training code
 - [x] LIBERO evaluation code
 - [x] LIBERO-Plus evaluation code
 - [x] SimplerEnv evaluation code
-- [ ] Training codes for custom datasets
+- [x] Training codes for custom datasets
 
-## Environment Setup
+<a id="environment-setup"></a>
+## ⚙️ Environment Setup
 
 ```
 git clone https://github.com/ginwind/VLA-JEPA
@@ -56,16 +75,19 @@ pip install -e .
 
 This repository's code is based on the [starVLA](https://github.com/starVLA/starVLA).
 
-## Training
+<a id="training"></a>
+## 🔥 Training
 
+<a id="pretrained-model-preparation"></a>
 ### 0️⃣ Pretrained Model Preparation
 Download the [Qwen3-VL-2B](https://huggingface.co/Qwen/Qwen3-VL-2B-Instruct) and the [V-JEPA2 encoder](https://huggingface.co/facebook/vjepa2-vitl-fpc64-256).  
 
+<a id="data-preparation"></a>
 ### 1️⃣ Data Preparation
 
 Download the following datasets:
 
-- [ssv2](https://huggingface.co/datasets/HuggingFaceM4/something_something_v2)
+- [ssv2](https://huggingface.co/datasets/morpheushoc/something-something-v2)
 - [Droid](https://huggingface.co/datasets/IPEC-COMMUNITY/droid_lerobot)
 - [LIBERO](https://huggingface.co/collections/IPEC-COMMUNITY/libero-benchmark-dataset)
 - [BridgeV2](https://huggingface.co/datasets/IPEC-COMMUNITY/bridge_orig_lerobot)
@@ -73,6 +95,7 @@ Download the following datasets:
 
 For robot datasets, you need to add a `modality.json` file under the `meta/` subdirectory of each LeRobot dataset. The `modality.json` files for LIBERO, BridgeV2, Fractal, and Droid are provided under `./examples` (BridgeV2 and Fractal are under `./examples/SimplerEnv`).
 
+<a id="start-training"></a>
 ### 2️⃣ Start Training
 Depending on whether you are conducting pre-training or post-training, select the appropriate training script and YAML configuration file from the [`/scripts`](./scripts) directory.
 
@@ -82,7 +105,26 @@ Ensure the following configurations are updated in the YAML file:
 
 Once the configurations are updated, you can proceed to start the training process.
 
-## Evaluation
+<a id="optional-custom-dataset-training"></a>
+### 3️⃣ Optional: Custom Dataset Training
+VLA-JEPA supports training on both robot datasets and human video datasets. You can run custom training by specifying robot data and/or human videos in your configuration.
+
+- **Robot Data:** We support training with datasets in the LeRobot v2.1 format. Convert your custom robot dataset to LeRobot v2.1 first.
+  - Define a custom robot dataset config class in [`data_config.py`](./starVLA/dataloader/gr00t_lerobot/data_config.py) (its video-key fields should match the values predefined in `modality.json`; see [`modality.json`](./examples/Droid/modality.json)), and add a mapping from `robot_type` to the config class in `ROBOT_TYPE_CONFIG_MAP`.
+  - `robot_type` is specified by `DATASET_NAMED_MIXTURES` in [`mixtures.py`](./starVLA/dataloader/gr00t_lerobot/mixtures.py): the dict key corresponds to `datasets.vla_data.data_mix` in the YAML training config, and the value is a tuple of sub-datasets. Each sub-dataset tuple contains three items: subdirectory, version, and `robot_type`. The `robot_type` selects the corresponding config for state/action normalization and other field alignment.
+  - Finally, update the YAML config accordingly and launch training.
+
+- **Human Video:** You can implement your own DataLoader and update the mapping from `dataset_py` to a dataloader in `build_dataloader` within [`./starVLA/dataloader/__init__.py`](./starVLA/dataloader/__init__.py). Alternatively, use our video dataloader and configure `datasets.video_data` in the YAML file:
+  - dataset_py: use our video dataloader (no change needed)
+  - video_dir: directory that contains video files; each file is named by its `index`, and the suffix is controlled by `extensions`
+  - text_file: a headerless CSV where the first column is `index` and the second column is the video text description
+  - CoT_prompt: prompt template for latent-action training (no change needed)
+  - extensions: list of video file extensions
+
+
+
+<a id="evaluation"></a>
+## 📊 Evaluation
 
 Download the model checkpoints from Hugging Face: https://huggingface.co/ginwind/VLA-JEPA
 
@@ -92,6 +134,7 @@ pip install tyro matplotlib mediapy websockets msgpack
 pip install numpy==1.24.4
 ```
 
+<a id="libero"></a>
 ### LIBERO
 
 - **LIBERO setup:** Prepare the LIBERO benchmark in a separate conda environment following the official LIBERO instructions: https://github.com/Lifelong-Robot-Learning/LIBERO
@@ -107,6 +150,7 @@ pip install numpy==1.24.4
 bash ./examples/LIBERO/eval_libero.sh
 ```
 
+<a id="libero-plus"></a>
 ### LIBERO-Plus
 
 
@@ -123,8 +167,7 @@ bash ./examples/LIBERO/eval_libero.sh
 bash ./examples/LIBERO-Plus/eval_libero_plus.sh
 ```
 
-**Notes:** Ensure each process has access to a GPU and verify that all checkpoint paths in the configuration files are correct before running the evaluation.
-
+<a id="simplerenv"></a>
 ### SimplerEnv
 
 - **SimplerEnv setup:** Clone the SimplerEnv repository: https://github.com/simpler-env/SimplerEnv and follow the official SimplerEnv installation instructions and build the benchmark in a separate conda environment.
@@ -149,10 +192,26 @@ bash examples/SimplerEnv/eval_files/auto_eval_scripts/batch_evaluate.sh
 bash ./examples/SimplerEnv/eval_files/auto_eval_scripts/calc_success_rate.sh <task_suite> <model_path> <log_dir>
 ```
 
-**Notes:** Ensure each process has access to a GPU and verify that all checkpoint paths in the configuration files are correct before running the evaluation.
+**Notes:** Ensure each process has access to a GPU and verify that all checkpoint paths in the configuration files are correct before running the evaluation. For LIBERO, we evaluate the 4 task suites in parallel on 4 GPUs. For LIBERO-Plus and SimplerEnv, we run evaluations in parallel on 8 GPUs. If you have fewer GPUs available, modify the parallelization logic in the launch scripts accordingly.
 
 
-
-## Acknowledgement
+<a id="acknowledgement"></a>
+## 🤝 Acknowledgement
 
 We extend our sincere gratitude to the [starVLA](https://github.com/starVLA/starVLA) project and the [V-JEPA2](https://github.com/facebookresearch/vjepa2) project for their invaluable open-source contributions.
+
+<a id="citation"></a>
+## 📝 Citation
+
+If you find our code or models useful in your work, please cite [our paper](https://arxiv.org/abs/2602.10098):
+```
+@misc{vlajepa2026,
+          title={VLA-JEPA: Enhancing Vision-Language-Action Model with Latent World Model}, 
+          author={Jingwen Sun and Wenyao Zhang and Zekun Qi and Shaojie Ren and Zezhi Liu and Hanxin Zhu and Guangzhong Sun and Xin Jin and Zhibo Chen},
+          year={2026},
+          eprint={2602.10098},
+          archivePrefix={arXiv},
+          primaryClass={cs.RO},
+          url={https://arxiv.org/abs/2602.10098}, 
+    }
+```
