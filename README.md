@@ -27,7 +27,7 @@
 <div align="center">
   <img src="assets/VLA-JEPA.png" width="90%" alt="VLA-JEPA overview" />
 </div>
-
+  
 <a id="table-of-contents"></a>
 ## Table of Contents
 - [Table of Contents](#table-of-contents)
