@@ -1,14 +1,14 @@
 #!/bin/bash
 
 
-export LIBERO_HOME=/home/dataset-local/LIBERO-plus
+export LIBERO_HOME=/path/to/LIBERO-plus           # TODO: set to your LIBERO-Plus path
 export LIBERO_CONFIG_PATH=${LIBERO_HOME}/libero
 
-export PYTHONPATH=$PYTHONPATH:${LIBERO_HOME} # let eval_libero find the LIBERO tools
-export PYTHONPATH=$(pwd):${PYTHONPATH} # let LIBERO find the websocket tools from main repo
-export sim_python=/home/dataset-local/LIBERO-plus/env/bin/python
+export PYTHONPATH=$PYTHONPATH:${LIBERO_HOME}
+export PYTHONPATH=$(pwd):${PYTHONPATH}
+export sim_python=/path/to/libero_env/bin/python  # TODO: set to your LIBERO conda env python
 
-your_ckpt=/home/dataset-local/ginwind/huggingface/VLA-JEPA/LIBERO/checkpoints/VLA-JEPA-LIBERO.pt
+your_ckpt=/path/to/VLA-JEPA-LIBERO.pt             # TODO: set to your checkpoint path
 
 folder_name=$(echo "$your_ckpt" | awk -F'/' '{print $(NF-2)"_"$(NF-1)"_"$NF}')
 
@@ -33,7 +33,7 @@ python ./deployment/model_server/server_policy.py \
     --use_bf16 \
     --cuda ${index} &
 
-# TODO pertubations should be modified in /home/dataset-assist-0/algorithm/ginwind/LIBERO-plus/libero/libero/benchmark/__init__.py
+# TODO: perturbations should be modified in <LIBERO_HOME>/libero/libero/benchmark/__init__.py
 num_trials_per_task=1 # must be 1 for perturbation evaluation
 video_out_path="results/plus_${task_suite_name}/${perturbation_file_name}/${folder_name}"
 

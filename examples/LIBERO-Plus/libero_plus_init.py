@@ -118,7 +118,9 @@ def get_ids_by_category(category_value):
     """
     import json
     # read json classification file
-    with open('/home/dataset-assist-0/algorithm/ginwind/LIBERO-plus/libero/libero/benchmark/task_classification.json', 'r', encoding='utf-8') as f:
+    import os
+    json_path = os.path.join(os.environ.get("LIBERO_HOME", ""), "libero/libero/benchmark/task_classification.json")
+    with open(json_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
     
     result = {}

@@ -208,7 +208,7 @@ def vit_ac_predictor(**kwargs):
 if __name__ == "__main__":
     device = torch.device("cuda:0")
     from transformers import AutoVideoProcessor, AutoModel
-    hf_repo = "/home/dataset-assist-0/algorithm/ginwind/models/vjepa2-vitl-fpc64-256"
+    hf_repo = "/path/to/vjepa2-vitl-fpc64-256"  # TODO: set to your V-JEPA2 model path
 
     model = AutoModel.from_pretrained(hf_repo).to(device)
     processor = AutoVideoProcessor.from_pretrained(hf_repo)
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     from torchcodec.decoders import VideoDecoder
     import numpy as np
 
-    video_url = "/home/dataset-assist-0/algorithm/ginwind/raw_starVLA/data_view_0.mp4"
+    video_url = "/path/to/sample_video.mp4"  # TODO: set to your sample video path
     vr = VideoDecoder(video_url)
     frame_idx = np.arange(0, 8) # choosing some frames. here, you can define more complex sampling strategy
     video = vr.get_frames_at(indices=frame_idx).data  # T x C x H x W
@@ -228,7 +228,7 @@ if __name__ == "__main__":
     print(torch.min(video["pixel_values_videos"]), torch.max(video["pixel_values_videos"])) #[-2.1179, 2.6051]
 
     from transformers.image_utils import load_image
-    image = load_image("/home/dataset-assist-0/algorithm/ginwind/raw_starVLA/data_image_view_0.png")
+    image = load_image("/path/to/sample_image.png")  # TODO: set to your sample image path
     pixel_values = processor(image, return_tensors="pt").to(model.device)["pixel_values_videos"]
     pixel_values = pixel_values.repeat(1, 8, 1, 1, 1) # repeating image 16 times
     print(pixel_values.shape)    #[1, 8, 3, 256, 256]
