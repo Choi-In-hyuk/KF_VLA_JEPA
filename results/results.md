@@ -150,6 +150,14 @@ pred_actions = self.action_model.predict_action(embodied_action_tokens, state)
 | EMA α=0.7 | 94.4% | 95.4% | 95.0% | 94.93% ± 0.41% | −0.27%p | 0.587 |
 | **KF (ours)** | **96.8%** | **97.0%** | **97.6%** | **97.13% ± 0.34%** | **+1.93%p** | **0.010\*** |
 
+**Per-seed KF improvement:**
+
+| Seed | Baseline | KF | Δ |
+|------|----------|----|---|
+| 7 | 94.6% | 96.8% | **+2.2%p** |
+| 42 | 95.2% | 97.0% | **+1.8%p** |
+| 123 | 95.8% | 97.6% | **+1.8%p** |
+
 #### LIBERO-Object
 
 | Method | Seed 7 | Seed 42 | Seed 123 | Mean ± Std | Δ | p-value |
@@ -158,6 +166,14 @@ pred_actions = self.action_model.predict_action(embodied_action_tokens, state)
 | EMA α=0.5 | 100.0% | 99.8% | 100.0% | 99.93% ± 0.09% | +0.00%p | 1.000 |
 | EMA α=0.7 | 100.0% | 100.0% | 100.0% | 100.00% ± 0.00% | +0.07%p | 0.374 |
 | **KF (ours)** | 99.8% | 99.8% | 100.0% | 99.87% ± 0.09% | −0.07%p | 0.519 |
+
+**Per-seed KF improvement:**
+
+| Seed | Baseline | KF | Δ |
+|------|----------|----|---|
+| 7 | 100.0% | 99.8% | −0.2%p |
+| 42 | 99.8% | 99.8% | 0.0%p |
+| 123 | 100.0% | 100.0% | 0.0%p |
 
 #### LIBERO-Goal
 
@@ -168,12 +184,28 @@ pred_actions = self.action_model.predict_action(embodied_action_tokens, state)
 | EMA α=0.7 | 98.0% | 96.4% | 96.6% | 97.00% ± 0.71% | −0.07%p | 0.938 |
 | **KF (ours)** | 97.6% | 98.0% | 97.6% | **97.73% ± 0.19%** | **+0.67%p** | 0.363 |
 
+**Per-seed KF improvement:**
+
+| Seed | Baseline | KF | Δ |
+|------|----------|----|---|
+| 7 | 97.8% | 97.6% | −0.2%p |
+| 42 | 97.6% | 98.0% | **+0.4%p** |
+| 123 | 95.8% | 97.6% | **+1.8%p** |
+
 #### LIBERO-Long (libero_10)
 
 | Method | Seed 7 | Seed 42 | Seed 123 | Mean ± Std | Δ | p-value |
 |--------|--------|---------|----------|------------|---|---------|
 | Baseline | 94.8% | 95.4% | 95.8% | 95.33% ± 0.41% | — | — |
 | **KF (ours)** | **95.4%** | **96.4%** | 진행 중 | — | — | — |
+
+**Per-seed KF improvement:**
+
+| Seed | Baseline | KF | Δ |
+|------|----------|----|---|
+| 7 | 94.8% | 95.4% | **+0.6%p** |
+| 42 | 95.4% | 96.4% | **+1.0%p** |
+| 123 | 95.8% | 진행 중 | — |
 
 ### 3.3 Cross-Suite Summary
 
