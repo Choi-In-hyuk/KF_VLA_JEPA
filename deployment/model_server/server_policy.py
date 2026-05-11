@@ -26,6 +26,13 @@ def main(args) -> None:
         vla = vla.to(torch.bfloat16)
     vla = vla.to(device).eval()
 
+    if args.lds_path:
+        vla.load_kf(args.lds_path, q_noise=args.kf_q, r_noise=args.kf_r)
+        logging.info("KF enabled: %s  q=%.3f  r=%.3f", args.lds_path, args.kf_q, args.kf_r)
+    elif args.ema_alpha is not None:
+        vla.load_ema(args.ema_alpha)
+        logging.info("EMA enabled: alpha=%.3f", args.ema_alpha)
+
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
     logging.info("Creating server (host: %s, ip: %s)", hostname, local_ip)
@@ -47,6 +54,10 @@ def build_argparser():
     parser.add_argument("--port", type=int, default=10093)
     parser.add_argument("--use_bf16", action="store_true")
     parser.add_argument("--cuda", default=0)
+    parser.add_argument("--lds_path", type=str, default=None, help="Path to LDS .npz for KF filtering")
+    parser.add_argument("--kf_q", type=float, default=0.1)
+    parser.add_argument("--kf_r", type=float, default=5.0)
+    parser.add_argument("--ema_alpha", type=float, default=None, help="EMA smoothing alpha (0~1); overridden by --lds_path")
     return parser
 
 

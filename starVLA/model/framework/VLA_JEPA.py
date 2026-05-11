@@ -99,6 +99,66 @@ class VLA_JEPA(baseframework):
 
         self.embodied_replace_prompt = "".join([embodied_action_token * self.config.framework.vj2_model.num_embodied_action_tokens_per_instruction])
 
+        # KF state (populated by load_kf; None = KF disabled)
+        self._lds       = None
+        self._kf_z      = None   # (latent_dim,) numpy
+        self._kf_P      = None   # (latent_dim, latent_dim) numpy
+        self._kf_Q      = None
+        self._kf_R      = None
+
+        # EMA state (populated by load_ema; None = EMA disabled)
+        self._ema_alpha = None
+        self._ema_y     = None   # (feat_dim,) numpy per batch item
+
+    def load_kf(self, lds_path: str, q_noise: float = 0.1, r_noise: float = 5.0) -> None:
+        """Load a trained LearnedLDS and enable KF filtering on embodied_action_tokens."""
+        import sys
+        sys.path.insert(0, "/home/choi/vjepa2")
+        from src.models.kf.learned_lds import LearnedLDS
+        self._lds  = LearnedLDS.load(lds_path)
+        d          = self._lds.latent_dim
+        self._kf_Q = q_noise * np.eye(d)
+        self._kf_R = r_noise * np.eye(d)
+        self.reset_kf()
+        logger.info(f"[KF] Loaded LDS from {lds_path}  latent_dim={d}  q={q_noise}  r={r_noise}")
+
+    def reset_kf(self) -> None:
+        """Reset KF state to uninformed prior (call at episode start)."""
+        if self._lds is None:
+            return
+        d          = self._lds.latent_dim
+        self._kf_z = np.zeros(d, dtype=np.float32)
+        self._kf_P = np.eye(d, dtype=np.float32)
+
+    def load_ema(self, alpha: float) -> None:
+        """Enable EMA smoothing on embodied_action_tokens (no offline training needed)."""
+        self._ema_alpha = alpha
+        self._ema_y     = None
+        logger.info(f"[EMA] Enabled  alpha={alpha}")
+
+    def reset_ema(self) -> None:
+        """Reset EMA state (call at episode start)."""
+        self._ema_y = None
+
+    def _ema_step(self, y_obs: np.ndarray) -> np.ndarray:
+        """One EMA step.  y_obs: (feat_dim,) → returns smoothed (feat_dim,)."""
+        if self._ema_y is None:
+            self._ema_y = y_obs.copy()
+        else:
+            self._ema_y = self._ema_alpha * y_obs + (1 - self._ema_alpha) * self._ema_y
+        return self._ema_y.copy()
+
+    def _kf_step(self, y_obs: np.ndarray) -> np.ndarray:
+        """One KF predict+update step.  y_obs: (feat_dim,) → returns filtered (feat_dim,)."""
+        z_obs  = y_obs @ self._lds.E.T                              # encode to latent
+        z_pred = self._lds.A @ self._kf_z                           # predict
+        P_pred = self._lds.A @ self._kf_P @ self._lds.A.T + self._kf_Q
+        S      = P_pred + self._kf_R
+        K      = P_pred @ np.linalg.solve(S.T, np.eye(S.shape[0])).T
+        self._kf_z = z_pred + K @ (z_obs - z_pred)                 # update state
+        self._kf_P = (np.eye(len(self._kf_z)) - K) @ P_pred
+        return self._kf_z @ self._lds.E                             # decode
+
     def expand_tokenizer(self, 
                          tokenizer: AutoTokenizer,
                          special_action_token: str = "<|action_{}|>",
@@ -327,6 +387,26 @@ class VLA_JEPA(baseframework):
             last_hidden = qwenvl_outputs.hidden_states[-1]   # [B, L, H]
             B, _, H = last_hidden.shape
             embodied_action_tokens = last_hidden[embodied_action_indices[0], embodied_action_indices[1], :].view(B, -1, H)
+
+        # KF filtering on embodied_action_tokens (if LDS loaded)
+        if self._lds is not None:
+            if kwargs.get("reset_kf", False):
+                self.reset_kf()
+            tokens_np  = embodied_action_tokens.float().cpu().numpy()  # (B, n_tok, H)
+            y_raw      = tokens_np.mean(axis=1)                        # (B, H) mean-pool
+            y_filtered = np.stack([self._kf_step(y_raw[b]) for b in range(tokens_np.shape[0])], axis=0)
+            correction = torch.from_numpy(y_filtered - y_raw).to(embodied_action_tokens)
+            embodied_action_tokens = embodied_action_tokens + correction.unsqueeze(1)
+
+        # EMA smoothing on embodied_action_tokens (if EMA enabled)
+        elif self._ema_alpha is not None:
+            if kwargs.get("reset_kf", False):
+                self.reset_ema()
+            tokens_np  = embodied_action_tokens.float().cpu().numpy()  # (B, n_tok, H)
+            y_raw      = tokens_np.mean(axis=1)                        # (B, H) mean-pool
+            y_filtered = np.stack([self._ema_step(y_raw[b]) for b in range(tokens_np.shape[0])], axis=0)
+            correction = torch.from_numpy(y_filtered - y_raw).to(embodied_action_tokens)
+            embodied_action_tokens = embodied_action_tokens + correction.unsqueeze(1)
 
         state = torch.from_numpy(np.array(state)).to(last_hidden.device, dtype=last_hidden.dtype) if state is not None else None
         # Step 4: Action Expert Forward and Loss

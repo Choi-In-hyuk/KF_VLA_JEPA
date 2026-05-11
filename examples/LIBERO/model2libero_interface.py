@@ -115,6 +115,7 @@ class M1Inference:
         
         action_chunk_size = self.action_chunk_size
         if step % action_chunk_size == 0:
+            vla_input["reset_kf"] = (step == 0)   # signal KF reset at episode start
             response = self.client.infer(vla_input)
             # unnormalize the action
             # import ipdb; ipdb.set_trace()
