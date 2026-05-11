@@ -169,12 +169,18 @@ for suite in "${SUITES[@]}"; do
     fi
 
     # Step 3: 평가
-    echo "[Step 3] 평가: baseline/KF/EMA(0.5,0.7) × 3 seeds"
-    for i in 1 2 3; do run_eval ${suite} "baseline" $i; done
-    for i in 1 2 3; do run_eval ${suite} "kf"       $i; done
-    for alpha in "${EMA_ALPHAS[@]}"; do
-        for i in 1 2 3; do run_eval ${suite} "ema" $i ${alpha}; done
-    done
+    if [ "${suite}" = "libero_10" ]; then
+        echo "[Step 3] 평가: baseline/KF × 3 seeds (libero_10 EMA 스킵 — PRO 우선)"
+        for i in 1 2 3; do run_eval ${suite} "baseline" $i; done
+        for i in 1 2 3; do run_eval ${suite} "kf"       $i; done
+    else
+        echo "[Step 3] 평가: baseline/KF/EMA(0.5,0.7) × 3 seeds"
+        for i in 1 2 3; do run_eval ${suite} "baseline" $i; done
+        for i in 1 2 3; do run_eval ${suite} "kf"       $i; done
+        for alpha in "${EMA_ALPHAS[@]}"; do
+            for i in 1 2 3; do run_eval ${suite} "ema" $i ${alpha}; done
+        done
+    fi
 done
 
 # ════════════════════════════════════════════════════════════════════

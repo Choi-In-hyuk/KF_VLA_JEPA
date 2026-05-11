@@ -173,7 +173,7 @@ pred_actions = self.action_model.predict_action(embodied_action_tokens, state)
 | Method | Seed 7 | Seed 42 | Seed 123 | Mean ± Std | Δ | p-value |
 |--------|--------|---------|----------|------------|---|---------|
 | Baseline | 94.8% | 95.4% | 95.8% | 95.33% ± 0.41% | — | — |
-| **KF (ours)** | **95.4%** | 진행 중 | 미시작 | — | — | — |
+| **KF (ours)** | **95.4%** | **96.4%** | 진행 중 | — | — | — |
 
 ### 3.3 Cross-Suite Summary
 
@@ -182,7 +182,7 @@ pred_actions = self.action_model.predict_action(embodied_action_tokens, state)
 | LIBERO-Spatial | 95.20% | 97.13% | **+1.93%p** | **0.010\*** | 유의함 |
 | LIBERO-Object | 99.93% | 99.87% | −0.07%p | 0.519 | Ceiling effect |
 | LIBERO-Goal | 97.07% | 97.73% | +0.67%p | 0.363 | std 0.90→0.19% |
-| LIBERO-Long | 95.33% | TBD | TBD | TBD | 진행 중 |
+| LIBERO-Long | 95.33% | TBD (+0.6~1.0%p) | TBD | TBD | 진행 중 (seed 1,2 완료) |
 
 ---
 

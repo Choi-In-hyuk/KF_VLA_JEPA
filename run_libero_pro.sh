@@ -1,5 +1,5 @@
 #!/bin/bash
-# LIBERO-PRO: 퍼터베이션 평가 (baseline / KF / EMA 0.5 / EMA 0.7) × 4 perturbations × 3 seeds
+# LIBERO-PRO: 퍼터베이션 평가 (baseline / KF) × 4 perturbations × 3 seeds
 # - LIBERO-PRO bddl/init 파일 기반, 별도 HDF5 데이터셋 불필요
 # - LDS는 원본 suite에서 학습된 것 재사용 (run_all_suites.sh 완료 후 실행)
 #
@@ -8,7 +8,6 @@
 set -eo pipefail
 
 # ── 설정 ────────────────────────────────────────────────────────────
-EMA_ALPHAS=(0.5 0.7)
 NUM_TRIALS=50
 SEEDS=(7 42 123)
 PORT=15087
@@ -33,8 +32,9 @@ LDS_PATHS["libero_object"]="/media/choi/8AA890DCA890C859/vjepa2_baseline/checkpo
 LDS_PATHS["libero_goal"]="/media/choi/8AA890DCA890C859/vjepa2_baseline/checkpoints/libero_goal_lds_tokens/lds_64.npz"
 LDS_PATHS["libero_10"]="/media/choi/8AA890DCA890C859/vjepa2_baseline/checkpoints/libero_10_lds_tokens/lds_64.npz"
 
-# 평가할 base suite 목록
-BASE_SUITES=("libero_spatial" "libero_goal" "libero_10")
+# 평가할 base suite 목록 (libero_10은 마지막에 별도 처리)
+EARLY_SUITES=("libero_spatial" "libero_object" "libero_goal")
+LATE_SUITES=("libero_10")
 
 # 퍼터베이션 타입 (HF에서 받은 파일 기준)
 PERTURBATIONS=("lan" "swap" "object" "task")
@@ -138,20 +138,31 @@ run_eval() {
 # ════════════════════════════════════════════════════════════════════
 cd /home/choi/VLA-JEPA
 
-for base_suite in "${BASE_SUITES[@]}"; do
-    for perturbation in "${PERTURBATIONS[@]}"; do
-        perturbed_suite="${base_suite}_${perturbation}"
-
-        echo ""
-        echo "════════════════════════════════════════════════════════"
-        echo "SUITE: ${perturbed_suite}"
-        echo "════════════════════════════════════════════════════════"
-
-        for i in 1 2 3; do run_eval ${perturbed_suite} ${base_suite} "baseline" $i; done
-        for i in 1 2 3; do run_eval ${perturbed_suite} ${base_suite} "kf"       $i; done
-        for alpha in "${EMA_ALPHAS[@]}"; do
-            for i in 1 2 3; do run_eval ${perturbed_suite} ${base_suite} "ema" $i ${alpha}; done
+# ── Phase 1: spatial / object / goal  (seed 단위로 묶어서 실행) ─────
+for i in 1; do  # 우선 seed 1만 실행 — 결과 확인 후 2 3 추가
+    echo ""
+    echo "════════════════════════════════════════════════════════"
+    echo "PHASE 1 — seed ${SEEDS[$((i-1))]}"
+    echo "════════════════════════════════════════════════════════"
+    for base_suite in "${EARLY_SUITES[@]}"; do
+        for perturbation in "${PERTURBATIONS[@]}"; do
+            perturbed_suite="${base_suite}_${perturbation}"
+            run_eval ${perturbed_suite} ${base_suite} "baseline" $i
+            run_eval ${perturbed_suite} ${base_suite} "kf"       $i
         done
+    done
+done
+
+# ── Phase 2: libero_10  (시간이 길어 마지막으로) ─────────────────────
+for i in 1; do  # 우선 seed 1만 실행
+    echo ""
+    echo "════════════════════════════════════════════════════════"
+    echo "PHASE 2 (libero_10) — seed ${SEEDS[$((i-1))]}"
+    echo "════════════════════════════════════════════════════════"
+    for perturbation in "${PERTURBATIONS[@]}"; do
+        perturbed_suite="libero_10_${perturbation}"
+        run_eval ${perturbed_suite} "libero_10" "baseline" $i
+        run_eval ${perturbed_suite} "libero_10" "kf"       $i
     done
 done
 
@@ -176,13 +187,11 @@ def get_sr(path):
             if m: return float(m.group(1))
     return None
 
-base_suites    = ["libero_spatial", "libero_goal", "libero_10"]
+base_suites    = ["libero_spatial", "libero_object", "libero_goal", "libero_10"]
 perturbations  = ["lan", "swap", "object", "task"]
 methods = [
     ("baseline", "Baseline",    lambda s,i: f"baseline_run{i}"),
     ("kf",       "KF (lds_64)", lambda s,i: f"kf_run{i}"),
-    ("ema_0p5",  "EMA (α=0.5)", lambda s,i: f"EMA_0p5_run{i}"),
-    ("ema_0p7",  "EMA (α=0.7)", lambda s,i: f"EMA_0p7_run{i}"),
 ]
 
 hdr = f"{'Suite':<26} {'Method':<16} {'Run1':>7} {'Run2':>7} {'Run3':>7} {'Mean':>8} {'Std':>6} {'vs Base':>9} {'p':>7}"
