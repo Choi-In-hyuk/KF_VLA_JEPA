@@ -75,11 +75,13 @@ $$A = \arg\min_{A} \sum_{t} \| z_t - A z_{t-1} \|^2, \quad A \in \mathbb{R}^{64 
 
 매 inference call마다 다음 KF predict-update를 수행한다.
 
-| 기호 | 의미 | 값 |
-|------|------|-----|
-| $Q$ | process noise covariance | $0.1 \cdot I_{64}$ |
-| $R$ | observation noise covariance | $5.0 \cdot I_{64}$ |
-| $P_0$ | 초기 state covariance | $I_{64}$ (uninformed prior) |
+| 기호 | KF 원래 의미 | 이 맥락에서의 의미 | 값 |
+|------|------------|------------------|-----|
+| $Q$ | process noise covariance | **AR(1) dynamics 모델의 근사 오차** — 작을수록 dynamics를 신뢰 | $0.1 \cdot I_{64}$ |
+| $R$ | observation noise covariance | **QwenVL token의 프레임 간 변동** — 클수록 관측을 불신 | $5.0 \cdot I_{64}$ |
+| $P_0$ | 초기 state covariance | **에피소드 시작 시 token 추정의 불확실성** | $I_{64}$ |
+
+$R \gg Q$ 이므로 KF는 매 스텝 QwenVL 관측보다 dynamics 예측을 우선한다. 이는 물리적 noise calibration이 아니라 **"dynamics 모델 신뢰도 vs 관측 신뢰도"의 상대적 가중치**로 해석하는 것이 정확하다.
 
 **Predict:**
 
